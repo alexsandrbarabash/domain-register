@@ -1,0 +1,17 @@
+{
+  "name": "hardhat-project",
+  "scripts": {
+    "test": "npx hardhat test",
+    "deploy:sepolia": "npx hardhat run --network sepolia scripts/deploy.ts",
+    "deploy": "npx hardhat run --network localhost scripts/deploy.ts"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^3.0.0",
+    "hardhat": "^2.17.4"
+  },
+  "dependencies": {
+    "chai": "^4.3.10",
+    "dotenv": "^16.3.1",
+    "ethers": "^6.7.1"
+  }
+}
