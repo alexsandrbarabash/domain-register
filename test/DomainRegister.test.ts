@@ -13,7 +13,7 @@ describe("DomainRegister", function () {
     DomainRegister = await ethers.getContractFactory("DomainRegister");
     [owner, addr1, addr2] = await ethers.getSigners();
     domainRegister = await DomainRegister.deploy(ethers.parseEther("1"));
-    await domainRegister.waitForDeployment();
+    // await domainRegister.waitForDeployment();
   });
 
   describe("Deployment", function () {
@@ -26,13 +26,16 @@ describe("DomainRegister", function () {
 
   describe("Domain registration", function () {
     it("Should register domain and reflect in user domains", async function () {
+      const value = ethers.parseEther("1");
       await domainRegister
         .connect(addr1)
         .registerDomain("com", { value: ethers.parseEther("1") });
-      expect(await domainRegister.register("com")).to.equal(addr1.address);
 
-      const userDomains = await domainRegister.getUserDomains(addr1.address);
-      expect(userDomains).to.include("com");
+      const domain = await domainRegister.register("com");
+      expect(domain.owner).to.equal(addr1.address);
+      expect(domain.pledge.toString()).to.equal(
+        ethers.parseEther("1").toString()
+      );
     });
 
     it("Should fail if domain already exists", async function () {
@@ -64,9 +67,19 @@ describe("DomainRegister", function () {
         .registerDomain("com", { value: ethers.parseEther("1") });
       await domainRegister.connect(addr1).releaseDomain("com");
 
-      expect(await domainRegister.register("com")).to.equal(ethers.ZeroAddress);
-      const userDomains = await domainRegister.getUserDomains(addr1.address);
-      expect(userDomains).to.not.include("com");
+      const domain = await domainRegister.register("com");
+
+      expect(domain.owner).to.equal(ethers.ZeroAddress);
+    });
+
+    it("Should not allow non-owner to release a domain", async function () {
+      await domainRegister.connect(addr1).registerDomain("example.com", {
+        value: ethers.parseEther("1"),
+      });
+
+      await expect(
+        domainRegister.connect(addr2).releaseDomain("example.com")
+      ).to.be.revertedWith("You must own the domain to release it.");
     });
   });
 });

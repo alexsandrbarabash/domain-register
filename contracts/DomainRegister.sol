@@ -2,62 +2,56 @@
 pragma solidity 0.8.21;
 
 contract DomainRegister {
-    uint public  minimalPledge;
+    uint256 public immutable minimalPledge;
 
-    mapping (string => address) public register;
-    mapping (string => uint) domainPledge;
-    mapping (address => string[]) userDomains;
-    
-    constructor(uint _minimalPledge) {
-        minimalPledge = _minimalPl  edge;
+    mapping(string => Domain) public register;
+
+    struct Domain {
+        address owner;
+        uint256 pledge;
+    }
+
+    constructor(uint256 _minimalPledge) {
+        minimalPledge = _minimalPledge;
     }
 
     modifier onlyNewDomain(string memory _domain) {
-        require(register[_domain] == address(0), "Domain is already taken.");
+        require(register[_domain].pledge == 0, "Domain is already taken.");
         _;
     }
-    
+
     modifier onlyDomainOwner(string memory _domain) {
-        require(register[_domain] == msg.sender, "You must own the domain to release it.");
+        require(
+            register[_domain].owner == msg.sender,
+            "You must own the domain to release it."
+        );
         _;
     }
-    
+
     modifier onlyWithValue() {
-        require(msg.value >= minimalPledge, "Must send enough amount of ether to register a domain.");
+        require(
+            msg.value >= minimalPledge,
+            "Must send enough amount of ether to register a domain."
+        );
         _;
     }
 
-    function registerDomain(string memory _domain) public payable onlyWithValue onlyNewDomain(_domain) {
-        register[_domain] = msg.sender;
-        domainPledge[_domain] = msg.value;
-        userDomains[msg.sender].push(_domain);
+    function registerDomain(string memory _domain)
+        public
+        payable
+        onlyWithValue
+        onlyNewDomain(_domain)
+    {
+        register[_domain].owner = msg.sender;
+        register[_domain].pledge = msg.value;
     }
 
-    function releaseDomain(string memory _domain) 
-        public 
+    function releaseDomain(string memory _domain)
+        public
         onlyDomainOwner(_domain)
     {
-        payable(msg.sender).transfer(domainPledge[_domain]);
-
-        string[] storage domains = userDomains[msg.sender];
-        for(uint i = 0; i < domains.length; i++) {
-            if(keccak256(bytes(domains[i])) == keccak256(bytes(_domain))) {
-                domains[i] = domains[domains.length - 1];
-                domains.pop();
-                break;
-            }
-        }
+        payable(msg.sender).transfer(register[_domain].pledge);
 
         delete register[_domain];
-        delete domainPledge[_domain];
     }
-
-    function getUserDomains(address userAddress) public view returns (string[] memory) {
-        return userDomains[userAddress];
-    }
-
-    function getMyDomains() public view returns (string[] memory) {
-        return userDomains[msg.sender];
-    }
-
 }
