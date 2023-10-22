@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.21;
 
-import {DomainJoin, DomainString} from "./DomainParserLibrary.sol";
+import {DomainJoin, DomainString} from "./DomainParserLibraryAssembly.sol";
+import "hardhat/console.sol";
 
 contract DomainRegister {
     uint256 public immutable minimalPledge;
@@ -26,6 +27,10 @@ contract DomainRegister {
     }
 
     modifier onlyDomainOwner(string memory _domain) {
+        console.log(
+        "DOmain owner %s",
+        register[_domain].owner
+        );
         require(
             register[_domain].owner == msg.sender,
             "You must own the domain to release it."
@@ -70,6 +75,7 @@ contract DomainRegister {
         checkFatherDomain(_domain)
     {
         _domain = _domain.removeProtocol();
+        console.log("Domain %s", _domain);
         register[_domain].owner = msg.sender;
         register[_domain].pledge = msg.value;
     }

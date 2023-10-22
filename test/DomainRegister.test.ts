@@ -10,7 +10,21 @@ describe("DomainRegister", function () {
   let addr2: Contract;
 
   beforeEach(async function () {
-    DomainRegister = await ethers.getContractFactory("DomainRegister");
+    const DomainJoinLibrary = await ethers.getContractFactory("DomainJoin");
+
+    const domainJoinLibrary = await DomainJoinLibrary.deploy();
+    await domainJoinLibrary.waitForDeployment();
+
+    const DomainSplitLibrary = await ethers.getContractFactory("DomainSplit");
+    const domainSplitLibrary = await DomainSplitLibrary.deploy();
+    await domainSplitLibrary.waitForDeployment();
+
+    DomainRegister = await ethers.getContractFactory("DomainRegister", {
+      libraries: {
+        DomainJoin: domainJoinLibrary.target,
+        DomainSplit: domainSplitLibrary.target,
+      },
+    });
     [owner, addr1, addr2] = await ethers.getSigners();
     domainRegister = await DomainRegister.deploy(ethers.parseEther("1"));
     // await domainRegister.waitForDeployment();
@@ -29,9 +43,9 @@ describe("DomainRegister", function () {
       const value = ethers.parseEther("1");
       await domainRegister
         .connect(addr1)
-        .registerDomain("com", { value: ethers.parseEther("1") });
+        .registerDomain("example.com", { value: ethers.parseEther("1") });
 
-      const domain = await domainRegister.register("com");
+      const domain = await domainRegister.register("example.com");
       expect(domain.owner).to.equal(addr1.address);
       expect(domain.pledge.toString()).to.equal(
         ethers.parseEther("1").toString()
@@ -45,7 +59,7 @@ describe("DomainRegister", function () {
       await expect(
         domainRegister
           .connect(addr2)
-          .registerDomain("com", { value: ethers.parseEther("1") })
+          .registerDomain("example.com", { value: ethers.parseEther("1") })
       ).to.be.revertedWith("Domain is already taken.");
     });
 
@@ -53,7 +67,7 @@ describe("DomainRegister", function () {
       await expect(
         domainRegister
           .connect(addr1)
-          .registerDomain("com", { value: ethers.parseEther("0.5") })
+          .registerDomain("example.com", { value: ethers.parseEther("0.5") })
       ).to.be.revertedWith(
         "Must send enough amount of ether to register a domain."
       );
@@ -64,10 +78,10 @@ describe("DomainRegister", function () {
     it("Should release domain and reflect in user domains", async function () {
       await domainRegister
         .connect(addr1)
-        .registerDomain("com", { value: ethers.parseEther("1") });
-      await domainRegister.connect(addr1).releaseDomain("com");
+        .registerDomain("example.com", { value: ethers.parseEther("1") });
+      await domainRegister.connect(addr1).releaseDomain("example.com");
 
-      const domain = await domainRegister.register("com");
+      const domain = await domainRegister.register("example.com");
 
       expect(domain.owner).to.equal(ethers.ZeroAddress);
     });
